@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="666ffbbe-c71c-469e-a499-82948f054cda" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="7a87a3d5-3867-4301-90c1-dc56034f478e" >
+		<file:connection workingDir="${app.home}" />
+	</file:config>
+	<flow name="scenario-one-scatter-gather-error-handling-flow" doc:id="8168885e-0e23-4101-9729-77a6de0dcb96" >
+		<http:listener doc:name="GET 8081/one" doc:id="488fb251-6699-4ae3-9af2-d1ef670bb699" config-ref="HTTP_Listener_config" path="/one"/>
+		<logger level="INFO" doc:name="LOG INFO" doc:id="d9d970c4-55f7-4587-852b-8dee8822725d" message="Before scatter gather"/>
+		<scatter-gather doc:name="Scatter-Gather" doc:id="ade30d28-0496-4682-a7fa-7c196a2af2e0" >
+			<route >
+				<try doc:name="Try" doc:id="65c08038-41e6-47ff-8c1f-d5173905c583" >
+					<file:read doc:name="Read Text File" doc:id="82c9bc7e-b12a-4307-bb2d-772a978c5471" path="read.txt" config-ref="File_Config" />
+					<error-handler >
+						<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="a4599554-3c30-49c8-a1c6-a5a86c6eaee4" type="ANY">
+							<set-payload value="#[output application/json&#10;---&#10;{&#10;	errorType: error.errorType.asString,&#10;	errorMessage: error.description,&#10;	customError: error.muleMessage.typedValue,&#10;	errorTimeStamp: now() as LocalDateTime&#10;}]" doc:name="SET ERROR Response" doc:id="d1cc00fd-8424-4a80-b4a3-47f6ca023efc" />
+							<logger level="INFO" doc:name="LOG ERROR Response" doc:id="2acddb9f-0af4-4c6d-9d8b-12f253d27fee" message='#[payload]'/>
+						</on-error-continue>
+					</error-handler>
+				</try>
+			</route>
+			<route >
+				<try doc:name="Try" doc:id="bcd0b8c3-d99a-4fdf-a5e5-3b0df754b4e6" >
+					<http:request method="GET" doc:name="Unknown API Call" doc:id="bf67ac85-5b3b-41c9-bc5e-727f7bde8b2f" url="http://localhost:8081/unknown" />
+					<error-handler >
+						<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="210b4504-046a-4f75-9f42-e8fb2b48ab9a" >
+							<set-payload value="#[output application/json&#10;---&#10;{&#10;	errorType: error.errorType.asString,&#10;	errorMessage: error.description,&#10;	customError: error.muleMessage.typedValue,&#10;	errorTimeStamp: now() as LocalDateTime&#10;}]" doc:name="SET ERROR Response" doc:id="980bc96b-262b-4e85-9f9d-a72ed3e30df2" />
+							<logger level="INFO" doc:name="LOG ERROR Response" doc:id="edf950fe-0a76-4053-816c-71e2be70f8b8" message="#[payload]" />
+						</on-error-continue>
+					</error-handler>
+				</try>
+			</route>
+		</scatter-gather>
+		<ee:transform doc:name="DW Payload" doc:id="cdf9cb3a-18a5-4045-8a6d-0bdc9f9e9f8d" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<file:write doc:name="Write" doc:id="ac733d21-d23d-4302-9ca7-80f43e9f04d1" config-ref="File_Config" path="write.txt"/>
+	</flow>
+	<flow name="scenario-two-scatter-gather-error-handling-flow" doc:id="fc8723b4-5f1c-4f71-b033-5b5a479723ab" >
+		<http:listener doc:name="GET 8081/two" doc:id="7d8fc3a8-89e2-4b66-8ae1-5e1dd8dbc8e2" config-ref="HTTP_Listener_config" path="/two"/>
+		<logger level="INFO" doc:name="LOG INFO" doc:id="f7a6ff35-5bb8-4104-9abf-a32f6ca1f8f3" />
+		<scatter-gather doc:name="Scatter-Gather" doc:id="2fee0231-2859-41cc-a646-b413063a74ac">
+			<route >
+				<file:read doc:name="Read Text File" doc:id="0ee8317c-abc8-4560-956b-4c4d21489195" config-ref="File_Config" path="read.txt"/>
+			</route>
+			<route >
+				<http:request method="GET" doc:name="Unknown API Call" doc:id="7b73bc59-4185-469c-b8ab-748528a2378d" url="http://localhost:8081/unknown"/>
+			</route>
+		</scatter-gather>
+		<ee:transform doc:name="DW Payload" doc:id="dc4e1a38-7522-4755-866e-37e15cd1b257" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<file:write doc:name="Write Text File" doc:id="047b1713-b7e2-4ba1-8f70-2dd34f5babcf" config-ref="File_Config" path="write.txt"/>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="6fec794a-5e9a-4b9b-9ebc-2525aa172d07" type="MULE:COMPOSITE_ROUTING,MULE:ROUTING">
+				<set-payload value="#[output application/json&#10;---&#10;{&#10;	errorType: error.errorType.asString,&#10;	errorMessage: error.description,&#10;	customError: error.muleMessage.typedValue,&#10;	errorTimeStamp: now() as LocalDateTime&#10;}]" doc:name="SET ERROR Response" doc:id="e17d69d3-7b77-4531-9831-6372088a46e9" />
+				<logger level="INFO" doc:name="LOG ERROR Response" doc:id="4e18e0ac-416b-4d2a-8cb4-84f645fbb636" message="#[payload]" />
+			</on-error-continue>
+		</error-handler>
+	</flow>
+</mule>

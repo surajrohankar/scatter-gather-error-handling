@@ -1,0 +1,27 @@
+{
+  "configs": [
+    "scatter-gather-error-handling.xml"
+  ],
+  "secureProperties": [],
+  "redeploymentEnabled": true,
+  "name": "1f22a7a2-7bf5-443e-991e-6b161c30dc6c:scatter-gather-error-handling:1.0.0",
+  "minMuleVersion": "4.3.0",
+  "requiredProduct": "MULE_EE",
+  "classLoaderModelLoaderDescriptor": {
+    "id": "mule",
+    "attributes": {
+      "exportedPackages": [],
+      "exportedResources": [
+        "application-types.xml",
+        "log4j2.xml",
+        "read.txt",
+        "scatter-gather-error-handling.xml",
+        "write.txt"
+      ]
+    }
+  },
+  "bundleDescriptorLoader": {
+    "id": "mule",
+    "attributes": {}
+  }
+}
