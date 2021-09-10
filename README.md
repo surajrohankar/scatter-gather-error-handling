@@ -1,6 +1,6 @@
 # Scatter Gather Error Handling
 
-If one of the route gets faild in scatter gather, it will through an error and wont get output of successfully completed router.
+If one of the route gets faild in scatter gather, it will throw an error and won't get output of successfully completed route.
 
 Note: If one of the route gets faild, paralally it will complete other routes but it will throws an error.
 
